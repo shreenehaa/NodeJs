@@ -1,7 +1,18 @@
-const express = require("express");
-const app = express();
+import express from "express";
+import { sequelize } from "./config.js";
+import { User } from "./user.js";
+// const sequelize = new Sequelize("postgres://user:pass@example.com:5432/dbname");
 
+const app = express();
+app.use(express.json());
 const PORT = 4000;
+try {
+  await sequelize.authenticate();
+  await sequelize.sync();
+  console.log("Connection has been established successfully.");
+} catch (error) {
+  console.error("Unable to connect to the database:", error);
+}
 
 var movies = [
   {
@@ -138,5 +149,52 @@ app.get("/movies/:id", function (request, response) {
   var ans = movies.find((ans) => ans.id == id_movie);
   ans ? response.send(ans) : response.status(404).send(NOT_FOUND_MSG);
 });
+// insert
+// const jane = await User.create({ name: "Jane", email: "Doe@gmail.com" });
+// console.log("Jane's auto-generated ID:", jane.id);
+// get users
+app.get("/users", async function (request, response) {
+  var ans = await User.findAll();
+  response.send(ans);
+});
+app.get("/users/:id", async function (request, response) {
+  var NOT_FOUND_MSG = { msg: "user not found" };
+  const { id } = request.params;
+  var ans = await User.findOne({
+    where: {
+      id: id,
+    },
+  });
+  ans ? response.send(ans) : response.status(404).send(NOT_FOUND_MSG);
+});
+// post users
 
+app.post("/users", async function (request, response) {
+  var user_detail = request.body;
+  var ans1 = await User.create(user_detail);
+  response.send(ans1);
+});
+//delete
+app.delete("/users/:id", async function (request, response) {
+  var NOT_FOUND_MSG = { msg: "user not found" };
+  const { id } = request.params;
+  var ans = await User.destroy({
+    where: {
+      id: id,
+    },
+  });
+  ans ? response.send("deleted") : response.status(404).send(NOT_FOUND_MSG);
+});
+// put--->update
+app.put("/users/:id", async function (request, response) {
+  const { id } = request.params;
+  const ans = request.body;
+  var ans1 = await User.update(ans, {
+    where: {
+      id: id,
+    },
+  });
+  const NOT_FOUND_MSG = { msg: "ID not found" };
+  ans1 ? response.send(ans1) : response.status(404).send(msg);
+});
 app.listen(PORT, () => console.log(`The server started in: ${PORT} ✨✨`));
